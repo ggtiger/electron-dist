@@ -1,0 +1,317 @@
+# API OpenAPI (修正版，适配 MySQL/MySQL 作为后端)
+openapi: 3.0.0
+info:
+  title: Electron App Distribution Platform API
+  version: 1.0.0
+  description: Core APIs for 应用、版本、上传、检查更新、分发
+servers:
+  - url: https://api.example.com
+    description: 生产环境
+paths:
+  /apps:
+    post:
+      summary: 创建应用
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppCreate'
+      responses:
+        '201':
+          description: 应用创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/App'
+    get:
+      summary: 获取应用列表
+      parameters:
+        - in: query
+          name: platform
+          schema:
+            type: string
+        - in: query
+          name: arch
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 应用列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/App'
+  /apps/{appId}:
+    delete:
+      summary: 删除应用
+      parameters:
+        - in: path
+          name: appId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204': { description: 删除成功 }
+  /apps/{appId}/versions:
+    post:
+      summary: 为应用创建新版本
+      parameters:
+        - in: path
+          name: appId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCreate'
+      responses:
+        '201':
+          description: 版本创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Version'
+    get:
+      summary: 获取应用版本列表
+      parameters:
+        - in: path
+          name: appId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 版本列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Version'
+  /apps/{appId}/versions/{versionId}:
+    get:
+      summary: 获取单个版本详情
+      parameters:
+        - in: path
+          name: appId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: versionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 版本详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Version'
+    delete:
+      summary: 删除版本
+      parameters:
+        - in: path
+          name: appId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: versionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204': { description: 删除成功 }
+  /uploads/installer:
+    post:
+      summary: 上传全量安装包
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+  /uploads/patch:
+    post:
+      summary: 上传增量包
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+  /check:
+    get:
+      summary: 版本检查
+      parameters:
+        - in: query
+          name: appVersion
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: rendererVersion
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: platform
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: arch
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 更新信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckResponse'
+  /files/{fileId}/download-url:
+    get:
+      summary: 获取文件下载地址（预签名 URL）
+      parameters:
+        - in: path
+          name: fileId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 下载地址
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadUrl'
+
+components:
+  schemas:
+    AppCreate:
+      type: object
+      required: [name, appKey, platform, arch]
+      properties:
+        name: { type: string }
+        appKey: { type: string }
+        platform: { type: string }
+        arch: { type: string }
+        description: { type: string }
+    App:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        appKey: { type: string }
+        platform: { type: string }
+        arch: { type: string }
+        description: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        deletedAt: { type: string, format: date-time }
+    VersionCreate:
+      type: object
+      required: [appVersion, rendererVersion]
+      properties:
+        appVersion: { type: string }
+        rendererVersion: { type: string }
+        versionCode: { type: integer }
+        description: { type: string }
+        releaseNotes: { type: string }
+        installerFileId: { type: string }
+        patchFileId: { type: string }
+    Version:
+      type: object
+      properties:
+        id: { type: string }
+        appId: { type: string }
+        appVersion: { type: string }
+        rendererVersion: { type: string }
+        versionCode: { type: integer }
+        description: { type: string }
+        releaseNotes: { type: string }
+        installerFileId: { type: string }
+        patchFileId: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        isActive: { type: boolean }
+    UploadResponse:
+      type: object
+      properties:
+        fileId: { type: string }
+        originalName: { type: string }
+        storagePath: { type: string }
+        sha256: { type: string }
+        size: { type: integer }
+    CheckResponse:
+      type: object
+      properties:
+        updateType: { type: string, enum: ["none","hot","installer"] }
+        version: { type: string }
+        url: { type: string }
+        sha256: { type: string }
+        notes: { type: string }
+    DownloadUrl:
+      type: object
+      properties:
+        url: { type: string }
+        expiresAt: { type: string, format: date-time }
