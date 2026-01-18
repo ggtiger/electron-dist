@@ -6,31 +6,6 @@
 version: '3.8'
 
 services:
-  # MySQL 数据库 (如果 1Panel 已有 MySQL，可注释此服务)
-  mysql:
-    image: mysql:8.0
-    container_name: ${CONTAINER_NAME:-electron-dist}-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-electron_dist}
-      MYSQL_USER: ${MYSQL_USER:-app_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-app_password}
-      TZ: Asia/Shanghai
-    ports:
-      - "${MYSQL_PORT:-3307}:3306"
-    volumes:
-      - ${DATA_DIR:-./data}/mysql:/var/lib/mysql
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    labels:
-      createdBy: "Apps"
-
   # 后端服务 (Next.js)
   backend:
     build:
